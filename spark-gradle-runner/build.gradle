@@ -1,0 +1,42 @@
+apply plugin: 'java-gradle-plugin'
+apply plugin: 'maven-publish'
+apply plugin: 'eclipse'
+apply plugin: 'signing'
+group = 'io.github.krishari2020'
+version = '1.0'
+
+repositories {
+  maven {
+  	url = uri("http://repo.gradle.org/gradle/libs-releases-local")
+  }
+  mavenCentral()
+}
+
+dependencies {
+  compile "org.gradle:gradle-core:5.6.2","org.apache.spark:spark-sql_2.11:2.4.0","org.apache.spark:spark-launcher_2.11:2.4.0","org.apache.hadoop:hadoop-common:2.7.3","org.apache.hadoop:hadoop-hdfs:2.7.3"
+}
+
+task sourceJar(type:Jar) {
+  classifier "sources"
+  from sourceSets.main.allJava
+}
+
+task javaDoc(type:Jar,dependsOn:javadoc) {
+  classifier "javadoc"
+  from javadoc.destinationDir
+}
+
+artifacts {
+    archives jar
+    archives sourceJar
+    archives javadocJar
+}
+
+gradlePlugin {
+  plugins {
+       testGradlePlugin {
+      id = 'spark-gradle-runner'
+      implementationClass = 'com.hari.gradle.spark.plugin.SparkPluginProject'
+  	}
+  }
+} 
