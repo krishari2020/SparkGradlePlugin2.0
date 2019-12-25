@@ -1,16 +1,15 @@
 apply plugin: 'java-gradle-plugin'
 apply plugin: 'maven-publish'
-apply plugin: 'eclipse'
 apply plugin: 'signing'
 group = 'io.github.krishari2020'
-version = '1.0'
+version = '1.0.0'
 
 repositories {
   maven {
   	url = uri("http://repo.gradle.org/gradle/libs-releases-local")
   }
   mavenCentral()
-}
+ }
 
 dependencies {
   compile "org.gradle:gradle-core:5.6.2","org.apache.spark:spark-sql_2.11:2.4.0","org.apache.spark:spark-launcher_2.11:2.4.0","org.apache.hadoop:hadoop-common:2.7.3","org.apache.hadoop:hadoop-hdfs:2.7.3"
@@ -21,7 +20,13 @@ task sourceJar(type:Jar) {
   from sourceSets.main.allJava
 }
 
-task javaDoc(type:Jar,dependsOn:javadoc) {
+tasks.withType(Javadoc) {
+options.addStringOption('Xdoclint:none', '-quiet')
+options.addStringOption('encoding', 'UTF-8')
+options.addStringOption('charSet', 'UTF-8')
+}
+
+task javadocJar(type:Jar,dependsOn:javadoc) {
   classifier "javadoc"
   from javadoc.destinationDir
 }
@@ -32,11 +37,122 @@ artifacts {
     archives javadocJar
 }
 
+signing {
+    sign configurations.archives
+}
+
 gradlePlugin {
   plugins {
        testGradlePlugin {
-      id = 'spark-gradle-runner'
+      id = 'spark-gradle-plugin'
       implementationClass = 'com.hari.gradle.spark.plugin.SparkPluginProject'
   	}
   }
 } 
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            customizePom(pom)
+            groupId 'io.github.krishari2020'
+            artifactId 'spark-gradle-plugin'
+            version '1.0.0'
+
+            from components.java
+            
+            // create the sign pom artifact
+			pom.withXml {
+    			def pomFile = file("${project.buildDir}/generated-pom.xml")
+    			writeTo(pomFile)
+    			def pomAscFile = signing.sign(pomFile).signatureFiles[0]
+    			artifact(pomAscFile) {
+        			classifier = null
+        			extension = 'pom.asc'
+    			}
+			}
+
+            // create the signed artifacts
+			project.tasks.signArchives.signatureFiles.each {
+    			artifact(it) {
+        			def matcher = it.file =~ /-(sources|javadoc)\.jar\.asc$/
+        			if (matcher.find()) {
+            		classifier = matcher.group(1)
+        		} else {
+            		classifier = null
+        			}
+        		extension = 'jar.asc'
+    			}
+			}
+            
+        }
+    }
+    
+ repositories {
+    		maven {
+    	    	url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+            	credentials {
+                	username ossrUserName
+                	password ossrPassword
+        	 }
+    	}
+    }
+}
+
+def customizePom(pom) {
+    pom.withXml {
+        def root = asNode()
+
+        // eliminate test-scoped dependencies (no need in maven central POMs)
+        root.dependencies.removeAll { dep ->
+            dep.scope == "test"
+        }
+
+        // add all items necessary for maven central publication
+        root.children().last() + {
+            resolveStrategy = Closure.DELEGATE_FIRST
+
+            description 'Launches spark application via gradle in cluster and local mode.'
+            name 'spark-gradle-plugin'
+            url 'https://github.com/krishari2020/spark-gradle-plugin'
+            organization {
+                name 'io.github.krishari2020'
+                url 'https://github.com/krishari2020'
+            }
+            issueManagement {
+                system 'GitHub'
+                url 'https://github.com/krishari2020/spark-gradle-plugin/issues'
+            }
+            licenses {
+                license {
+                    name 'Apache License 2.0'
+                    url 'https://github.com/krishari2020/spark-gradle-plugin/blob/master/spark-gradle-runner/LICENSE'
+                    distribution 'repo'
+                }
+            }
+            scm {
+                url 'https://github.com/krishari2020/spark-gradle-plugin'
+                connection 'scm:git:git://github.com/krishari2020/spark-gradle-plugin.git'
+                developerConnection 'scm:git:ssh://git@github.com:krishari2020/spark-gradle-plugin.git'
+            }
+            developers {
+                developer {
+                    name 'Harikrishna'
+                }
+            }
+        }
+    }
+}
+
+model {
+    tasks.generatePomFileForMavenJavaPublication {
+        destination = file("$buildDir/generated-pom.xml")
+    }
+    
+    tasks.publishMavenJavaPublicationToMavenLocal {
+        dependsOn project.tasks.signArchives
+    }
+    
+    tasks.publishMavenJavaPublicationToMavenRepository {
+        dependsOn project.tasks.signArchives
+    }   
+}
