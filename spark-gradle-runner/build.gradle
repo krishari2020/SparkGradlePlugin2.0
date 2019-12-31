@@ -1,5 +1,6 @@
-apply plugin: 'java-gradle-plugin'
 apply plugin: 'maven-publish'
+apply plugin: 'java'
+apply plugin: 'java-gradle-plugin'
 apply plugin: 'signing'
 group = 'io.github.krishari2020'
 version = '1.0.0'
@@ -38,12 +39,13 @@ artifacts {
 }
 
 signing {
-    sign configurations.archives
+    useGpgCmd()
+    sign(publishing.publications)
 }
 
 gradlePlugin {
   plugins {
-       testGradlePlugin {
+      testGradlePlugin {
       id = 'spark-gradle-plugin'
       implementationClass = 'com.hari.gradle.spark.plugin.SparkPluginProject'
   	}
@@ -52,45 +54,40 @@ gradlePlugin {
 
 publishing {
     publications {
+         pluginMaven(MavenPublication) {
+        	 pom {
+ 	            name = 'spark-gradle-runner'
+                description = 'Library/Utility to launch spark application in cluster and local mode via gradle.'
+                url = 'https://github.com/krishari2020/spark-gradle-plugin'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'harim'
+                        name = 'Harikrishna M'
+                        email = 'krishari2020@gmail.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/krishari2020/spark-gradle-plugin.git'
+                    developerConnection = 'scm:git:ssh://git@github.com:krishari2020/spark-gradle-plugin.git'
+                    url = 'https://github.com/krishari2020/spark-gradle-plugin'
+                }
+ 	   		}
+        }
+        
         mavenJava(MavenPublication) {
-            customizePom(pom)
-            groupId 'io.github.krishari2020'
-            artifactId 'spark-gradle-plugin'
-            version '1.0.0'
-
             from components.java
-            
-            // create the sign pom artifact
-			pom.withXml {
-    			def pomFile = file("${project.buildDir}/generated-pom.xml")
-    			writeTo(pomFile)
-    			def pomAscFile = signing.sign(pomFile).signatureFiles[0]
-    			artifact(pomAscFile) {
-        			classifier = null
-        			extension = 'pom.asc'
-    			}
-			}
-			
-			artifact(sourceJar) {
+            artifact(sourceJar) {
 				classifier = 'sources'
 			}
 			artifact(javadocJar) {
 				classifier = 'javadoc'
 			}
-
-            // create the signed artifacts
-			project.tasks.signArchives.signatureFiles.each {
-    			artifact(it) {
-        			def matcher = it.file =~ /-(sources|javadoc)\.jar\.asc$/
-        			if (matcher.find()) {
-            		classifier = matcher.group(1)
-        		} else {
-            		classifier = null
-        			}
-        		extension = 'jar.asc'
-    			}
-			}
-            
         }
     }
     
@@ -103,63 +100,4 @@ publishing {
         	 }
     	}
     }
-}
-
-def customizePom(pom) {
-    pom.withXml {
-        def root = asNode()
-
-        // eliminate test-scoped dependencies (no need in maven central POMs)
-        root.dependencies.removeAll { dep ->
-            dep.scope == "test"
-        }
-
-        // add all items necessary for maven central publication
-        root.children().last() + {
-            resolveStrategy = Closure.DELEGATE_FIRST
-
-            description 'Launches spark application via gradle in cluster and local mode.'
-            name 'spark-gradle-plugin'
-            url 'https://github.com/krishari2020/spark-gradle-plugin'
-            organization {
-                name 'io.github.krishari2020'
-                url 'https://github.com/krishari2020'
-            }
-            issueManagement {
-                system 'GitHub'
-                url 'https://github.com/krishari2020/spark-gradle-plugin/issues'
-            }
-            licenses {
-                license {
-                    name 'Apache License 2.0'
-                    url 'https://github.com/krishari2020/spark-gradle-plugin/blob/master/spark-gradle-runner/LICENSE'
-                    distribution 'repo'
-                }
-            }
-            scm {
-                url 'https://github.com/krishari2020/spark-gradle-plugin'
-                connection 'scm:git:git://github.com/krishari2020/spark-gradle-plugin.git'
-                developerConnection 'scm:git:ssh://git@github.com:krishari2020/spark-gradle-plugin.git'
-            }
-            developers {
-                developer {
-                    name 'Harikrishna'
-                }
-            }
-        }
-    }
-}
-
-model {
-    tasks.generatePomFileForMavenJavaPublication {
-        destination = file("$buildDir/generated-pom.xml")
-    }
-    
-    tasks.publishMavenJavaPublicationToMavenLocal {
-        dependsOn project.tasks.signArchives
-    }
-    
-    tasks.publishMavenJavaPublicationToMavenRepository {
-        dependsOn project.tasks.signArchives
-    }   
 }
