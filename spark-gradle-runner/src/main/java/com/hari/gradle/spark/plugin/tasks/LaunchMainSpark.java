@@ -54,6 +54,7 @@ public class LaunchMainSpark {
 	 */
 
 	public static void main(String args[]) {
+		SPGLogger.logInfo.accept(String.format("Number of program args is %s",args.length));
 		if (args == null || args.length != 9)
 			throw new IllegalArgumentException(" Not enough arguments to launch SparkLauncher ");
 		String appName = args[0];
