@@ -9,8 +9,4 @@ gradlew
 gradlew.bat
 build/
 bin/
-src/main/resources/
-src/test/resources/
 
-# Ignore Gradle build output directory
-build
