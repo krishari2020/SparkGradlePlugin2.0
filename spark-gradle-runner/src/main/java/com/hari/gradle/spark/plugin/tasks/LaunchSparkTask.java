@@ -6,6 +6,7 @@ import static com.hari.gradle.spark.plugin.Constants.HADOOP_HOME;
 import static com.hari.gradle.spark.plugin.Constants.HADOOP_USER_NAME;
 import static com.hari.gradle.spark.plugin.Constants.JOB_DEPS_FILE_SUFFIX;
 import static com.hari.gradle.spark.plugin.Constants.SPARK_CONF_DEPLOY_MODE;
+import static com.hari.gradle.spark.plugin.Constants.SPARK_MAIN_CLASSPATH;
 import static com.hari.gradle.spark.plugin.Constants.SPARK_SCALA_VERSION;
 import static com.hari.gradle.spark.plugin.Constants.STD_ERR;
 import static com.hari.gradle.spark.plugin.Constants.STD_OUT;
@@ -83,19 +84,21 @@ public class LaunchSparkTask extends DefaultTask {
 				? new File(settings.getErrRedirect())
 				: new File(p.getBuildDir().toPath() + File.separator + STD_OUT);
 		SPGLogger.logInfo.accept(String.format("Output redirected to log file %s", outFile.toPath().toString()));
-		List<Object> prgArgs = asList(
-				new Object[] { settings.getAppName(), settings.getMaster(), files[0].toPath().toString(), mainClass,
-						classPath, errFile, outFile, sparkHome, settings.getSparkConfig() });
+		List<Object> prgArgs = asList(new Object[] { settings.getAppName(), settings.getMaster(),
+				files[0].toPath().toString(), mainClass, errFile, outFile, sparkHome, settings.getSparkConfig() });
 		SPGLogger.logFine.accept("Printing input args to LaunchMainSpark main method");
 		p.javaexec(new Action<JavaExecSpec>() {
 			@Override
 			public void execute(JavaExecSpec spec) {
 				spec.args(prgArgs);
-				spec.setClasspath(p.files(p.getLayout().getProjectDirectory().dir(classPath)));
+				spec.setClasspath(
+						p.fileTree(p.getLayout().getBuildDirectory().dir(JOB_DEPS_FILE_SUFFIX + File.separator)));
 				SPGLogger.logFine.accept(PROPERTY_SET_VALUE.apply("SPARK_SCALA", settings.getScalaVersion()));
 				spec.getEnvironment().put(SPARK_SCALA_VERSION, settings.getScalaVersion());
 				SPGLogger.logFine.accept(PROPERTY_SET_VALUE.apply(HADOOP_HOME, settings.getHadoopHome()));
 				spec.getEnvironment().put(HADOOP_HOME, settings.getHadoopHome());
+				SPGLogger.logFine.accept(PROPERTY_SET_VALUE.apply(SPARK_MAIN_CLASSPATH, classPath));
+				spec.getEnvironment().put(SPARK_MAIN_CLASSPATH, classPath);
 				if (runMode == SparkRunMode.YARN_CLIENT || runMode == SparkRunMode.YARN_CLUSTER) {
 					SPGLogger.logFine.accept(
 							String.format("The spark job is to be submitted in yarn cluster and the deployMode is %s",

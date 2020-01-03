@@ -29,7 +29,7 @@ public class Constants {
 	public static final String YARN_CONF_DIR = "YARN_CONF_DIR";
 	public static final String YARN_LIB_ZIP_FILE = "yarn_libs.zip";
 	public static final String DISTRIBUTED_YARN_CACHE_PATH = "DISTRIBUTED_YARN_CACHE_PATH";
-
+	
 	// Spark related constants
 	public static final String STD_ERR = "stdErr.txt";
 	public static final String STD_OUT = "stdOut.txt";
@@ -40,6 +40,7 @@ public class Constants {
 
 	// Spark-Gradle related constants
 	public static final String JOB_DEPS_FILE_SUFFIX = "jobDeps";
+	public static final String SPARK_MAIN_CLASSPATH = "spark.main.classpath";
 
 	private Constants() {
 	}

@@ -3,7 +3,7 @@ apply plugin: 'java'
 apply plugin: 'java-gradle-plugin'
 apply plugin: 'signing'
 group = 'io.github.krishari2020'
-version = '1.0.0'
+version = '1.0.2'
 
 repositories {
   maven {
@@ -22,9 +22,10 @@ task sourceJar(type:Jar) {
 }
 
 tasks.withType(Javadoc) {
-options.addStringOption('Xdoclint:none', '-quiet')
-options.addStringOption('encoding', 'UTF-8')
-options.addStringOption('charSet', 'UTF-8')
+	options.addStringOption('Xdoclint:none', '-quiet')
+	options.addStringOption('encoding', 'UTF-8')
+	options.addStringOption('charSet', 'UTF-8')
+	failOnError = false
 }
 
 task javadocJar(type:Jar,dependsOn:javadoc) {

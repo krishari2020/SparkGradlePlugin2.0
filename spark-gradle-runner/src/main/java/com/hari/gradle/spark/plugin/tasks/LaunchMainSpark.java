@@ -5,6 +5,7 @@ import static com.hari.gradle.spark.plugin.Constants.HADOOP_HOME;
 import static com.hari.gradle.spark.plugin.Constants.HADOOP_USER_NAME;
 import static com.hari.gradle.spark.plugin.Constants.SPARK_CONF_DEPLOY_MODE;
 import static com.hari.gradle.spark.plugin.Constants.SPARK_CONF_YARN_ZIP;
+import static com.hari.gradle.spark.plugin.Constants.SPARK_MAIN_CLASSPATH;
 import static com.hari.gradle.spark.plugin.Constants.YARN_CONF_DIR;
 import static com.hari.gradle.spark.plugin.SPGLogger.PROPERTY_SET_VALUE;
 import static java.util.Arrays.asList;
@@ -54,17 +55,17 @@ public class LaunchMainSpark {
 	 */
 
 	public static void main(String args[]) {
-		SPGLogger.logInfo.accept(String.format("Number of program args is %s",args.length));
-		if (args == null || args.length != 9)
-			throw new IllegalArgumentException(" Not enough arguments to launch SparkLauncher ");
+		if (args == null || args.length != 8)
+			throw new IllegalArgumentException(
+					String.format("Number of program args violated , expected 8 args but actual is %s", args.length));
 		String appName = args[0];
 		String master = args[1];
 		String jarPath = args[2];
 		String mainClass = args[3];
-		String errFile = args[5];
-		String outFile = args[6];
-		String sparkHome = args[7];
-		String sparkConfig = args[8];
+		String errFile = args[4];
+		String outFile = args[5];
+		String sparkHome = args[6];
+		String sparkConfig = args[7];
 
 		// look for if env vars YARN_CONF_DIR and HADOOP_HOME have been set
 		// if so it would be needed to submit application to yarn.
@@ -73,6 +74,7 @@ public class LaunchMainSpark {
 				Environment.newInstance(HADOOP_HOME, System.getenv(HADOOP_HOME)),
 				Environment.newInstance(HADOOP_USER_NAME, System.getenv(HADOOP_USER_NAME)));
 		String yarnDistributedClassPath = System.getenv(DISTRIBUTED_YARN_CACHE_PATH);
+		String classPath = System.getenv(SPARK_MAIN_CLASSPATH);
 		String yarnClusterMode = System.getenv(SPARK_CONF_DEPLOY_MODE);
 		Optional<SparkLauncher> launcher = Optional
 				.ofNullable(!envs.isEmpty() && envs.size() == 3 ? new SparkLauncher(envs) : new SparkLauncher());
@@ -90,8 +92,8 @@ public class LaunchMainSpark {
 									.setDeployMode(yarnClusterMode);
 						} else {
 							// In stand-alone mode be sure to set the Driver and Executor classPath.
-							return launch2.setConf(SparkLauncher.DRIVER_EXTRA_CLASSPATH, args[4])
-									.setConf(SparkLauncher.EXECUTOR_EXTRA_CLASSPATH, args[4]);
+							return launch2.setConf(SparkLauncher.DRIVER_EXTRA_CLASSPATH, classPath)
+									.setConf(SparkLauncher.EXECUTOR_EXTRA_CLASSPATH, classPath);
 						}
 					}).map(launch3 -> {
 						// parse out the comma separated spark configs
