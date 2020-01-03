@@ -2,15 +2,15 @@
 .gradle
 .classpath
 .project
+.cache-main
 .settings/
-.gradle/
+gradle/
 gradlew
 gradlew.bat
 build/
-test-output/
 bin/
-.cache-main
 src/main/resources/
+src/test/resources/
 
 # Ignore Gradle build output directory
 build
