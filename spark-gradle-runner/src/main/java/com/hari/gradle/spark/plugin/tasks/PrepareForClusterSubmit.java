@@ -55,66 +55,73 @@ public class PrepareForClusterSubmit extends DefaultTask {
 	@TaskAction
 	public void zipAndUploadToCluster() throws Exception {
 		final Project p = getProject();
-		Settings settings = (Settings) p.getExtensions().getByName(SETTINGS_EXTN);
+		Settings settings = retrieveSettings(p);
+		// Require HADOOP_CONF_DIR to be set to run in cluster.
+		if (settings.getHadoopHome() == null || settings.getHadoopHome().length() == 0)
+			throw new IllegalArgumentException("Invalid hadoopHome property value");
+		// compress all the needed jars into a zip file before uploading it to cluster.
+		// the required jars are not more than what is required for driver/executor
+		// classpath. The zip file would be created under ${PROJECT_BUILD_DIR} as
+		// ${YARN_LIB_ZIP_FILE}
+		final String hadoopConf = settings.getHadoopConf();
+		final String depsDownloadedPath = p.getBuildDir().toPath() + File.separator + JOB_DEPS_FILE_SUFFIX
+				+ File.separator;
+		SPGLogger.logInfo.accept(String.format(
+				"Required runtime jars downloaded in this path %s which would be bundled as zip", depsDownloadedPath));
+		final String zipPath = p.getBuildDir().toPath().toString() + File.separator + YARN_LIB_ZIP_FILE;
+		final String destJarPath = settings.getJarZipDestPath();
 
-		final SparkRunMode runMode = getRunMode.apply(settings.getMaster()).apply(settings.getMode());
-		if (runMode == SparkRunMode.YARN_CLIENT || runMode == SparkRunMode.YARN_CLUSTER) {
-			// Require HADOOP_CONF_DIR to be set to run in cluster.
-			if (settings.getHadoopHome() == null || settings.getHadoopHome().length() == 0)
-				throw new IllegalArgumentException("Invalid hadoopHome property value");
-			// compress all the needed jars into a zip file before uploading it to cluster.
-			// the required jars are not more than what is required for driver/executor
-			// classpath. The zip file would be created under ${PROJECT_BUILD_DIR} as
-			// ${YARN_LIB_ZIP_FILE}
-			final String hadoopConf = settings.getHadoopConf();
-			final String depsDownloadedPath = p.getBuildDir().toPath() + File.separator + JOB_DEPS_FILE_SUFFIX
-					+ File.separator;
-			SPGLogger.logInfo.accept(
-					String.format("Required runtime jars downloaded in this path %s which would be bundled as zip",
-							depsDownloadedPath));
-			final String zipPath = p.getBuildDir().toPath().toString() + File.separator + YARN_LIB_ZIP_FILE;
-			final String destJarPath = settings.getJarZipDestPath();
+		// also set the hadoop.home.dir system property and hadoop_user_name property
+		// and yarn_conf_dir.
 
-			// also set the hadoop.home.dir system property and hadoop_user_name property
-			// and yarn_conf_dir.
+		System.setProperty(HADOOP_HOME_DIR, settings.getHadoopHome());
+		System.setProperty(HADOOP_HOME, settings.getHadoopHome());
+		System.setProperty(HADOOP_USER_NAME, settings.getHadoopUserName());
+		System.setProperty(YARN_CONF_DIR, settings.getHadoopConf());
+		// Although I would like reduce significantly the size of the zip file
+		// I am not so familiar with algos for compressing files which are already
+		// compressed in the form of jar. Tried with few compression strategies
+		// but it turned out to be futile :(
+		try (final ZipOutputStream zipOS = new ZipOutputStream(
+				new CheckedOutputStream(new FileOutputStream(zipPath), new CRC32()))) { // need to understand more
+																						// about Adler32 | CRC32.
+			zipOS.setLevel(Deflater.BEST_COMPRESSION);
+			List<File> sparkJars = asList(new File(depsDownloadedPath).listFiles(JAR_FILTER));
+			sparkJars.forEach(jar -> {
+				try {
+					zipOS.putNextEntry(new ZipEntry(jar.getName()));
+					byte[] bytes = Files.readAllBytes(Paths.get(jar.toURI()));
+					zipOS.write(bytes, 0, bytes.length);
+					zipOS.closeEntry();
+				} catch (IOException io) {
+					SPGLogger.logError.accept("Failed while creating the yarn_libs zip file. ");
+					throw new RuntimeException(io);
+				}
+			});
+		}
+		// Post successful creation of archive file it needs to be uploaded to HDFS
+		if (!Files.exists(Paths.get(zipPath)))
+			throw new FileNotFoundException("yarn_libs not found , hence failing the task");
 
-			System.setProperty(HADOOP_HOME_DIR, settings.getHadoopHome());
-			System.setProperty(HADOOP_HOME, settings.getHadoopHome());
-			System.setProperty(HADOOP_USER_NAME, settings.getHadoopUserName());
-			System.setProperty(YARN_CONF_DIR, settings.getHadoopConf());
-			// Although I would like reduce significantly the size of the zip file
-			// I am not so familiar with algos for compressing files which are already
-			// compressed in the form of jar. Tried with few compression strategies
-			// but it turned out to be futile :(
-			try (final ZipOutputStream zipOS = new ZipOutputStream(
-					new CheckedOutputStream(new FileOutputStream(zipPath), new CRC32()))) { // need to understand more
-																							// about Adler32 | CRC32.
-				zipOS.setLevel(Deflater.BEST_COMPRESSION);
-				List<File> sparkJars = asList(new File(depsDownloadedPath).listFiles(JAR_FILTER));
-				sparkJars.forEach(jar -> {
-					try {
-						zipOS.putNextEntry(new ZipEntry(jar.getName()));
-						byte[] bytes = Files.readAllBytes(Paths.get(jar.toURI()));
-						zipOS.write(bytes, 0, bytes.length);
-						zipOS.closeEntry();
-					} catch (IOException io) {
-						SPGLogger.logError.accept("Failed while creating the yarn_libs zip file. ");
-						throw new RuntimeException(io);
-					}
-				});
-			}
-			// Post successful creation of archive file it needs to be uploaded to HDFS
-			if (!Files.exists(Paths.get(zipPath)))
-				throw new FileNotFoundException("yarn_libs not found , hence failing the task");
-
-			int result = ToolRunner.run(new HDFSCopier(), new String[] { hadoopConf, zipPath, destJarPath });
-			if (result != 0) {
-				SPGLogger.logError.accept("Failed to copy yarn_libs zip to HDFS , hence failing the task");
-				throw new RuntimeException("HDFS copy operation failed with exit code" + result);
-			}
-
+		int result = ToolRunner.run(new HDFSCopier(), new String[] { hadoopConf, zipPath, destJarPath });
+		if (result != 0) {
+			SPGLogger.logError.accept("Failed to copy yarn_libs zip to HDFS , hence failing the task");
+			throw new RuntimeException("HDFS copy operation failed with exit code" + result);
 		}
 
+	}
+
+	private Settings retrieveSettings(Project p) {
+		if (p == null)
+			throw new IllegalArgumentException(" Project parameter cannot be passed a null value");
+		return (Settings) p.getExtensions().getByName(SETTINGS_EXTN);
+	}
+
+	@Override
+	public boolean getEnabled() {
+		Settings s = retrieveSettings(getProject());
+		final SparkRunMode runMode = getRunMode.apply(s.getMaster()).apply(s.getMode());
+		return runMode == SparkRunMode.YARN_CLIENT || runMode == SparkRunMode.YARN_CLUSTER;
 	}
 
 	/**
