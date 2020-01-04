@@ -8,7 +8,6 @@ import static com.hari.gradle.spark.plugin.Constants.YARN_CONF_DIR;
 import static com.hari.gradle.spark.plugin.Constants.YARN_LIB_ZIP_FILE;
 import static com.hari.gradle.spark.plugin.SPGLogger.PROPERTY_SET_VALUE;
 import static com.hari.gradle.spark.plugin.Settings.SETTINGS_EXTN;
-import static com.hari.gradle.spark.plugin.SparkRunMode.getRunMode;
 import static com.hari.gradle.spark.plugin.Utils.getFileSystem;
 import static com.hari.gradle.spark.plugin.tasks.LaunchSparkTask.JAR_FILTER;
 import static java.util.Arrays.asList;
@@ -38,7 +37,6 @@ import org.gradle.api.tasks.TaskAction;
 
 import com.hari.gradle.spark.plugin.SPGLogger;
 import com.hari.gradle.spark.plugin.Settings;
-import com.hari.gradle.spark.plugin.SparkRunMode;
 
 /**
  * Prepares spark-job submission to cluster (currently only YARN). Steps involve
@@ -115,13 +113,6 @@ public class PrepareForClusterSubmit extends DefaultTask {
 		if (p == null)
 			throw new IllegalArgumentException(" Project parameter cannot be passed a null value");
 		return (Settings) p.getExtensions().getByName(SETTINGS_EXTN);
-	}
-
-	@Override
-	public boolean getEnabled() {
-		Settings s = retrieveSettings(getProject());
-		final SparkRunMode runMode = getRunMode.apply(s.getMaster()).apply(s.getMode());
-		return runMode == SparkRunMode.YARN_CLIENT || runMode == SparkRunMode.YARN_CLUSTER;
 	}
 
 	/**
