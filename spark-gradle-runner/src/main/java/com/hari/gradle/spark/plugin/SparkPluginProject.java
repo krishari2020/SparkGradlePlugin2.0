@@ -53,7 +53,7 @@ public class SparkPluginProject implements Plugin<Project> {
 		final Settings settings = p.getExtensions().create(SETTINGS_EXTN, Settings.class);
 		Task copyDeps = p.getTasks().create("copyDeps", CopyDepsTask.class);
 		copyDeps = taskInit.apply(copyDeps).apply("Copies all dependencies required to run spark job")
-				.apply(p.task("jar")).apply(GROUP);
+				.apply(p.getTasks().getByName("jar")).apply(GROUP);
 
 		Task prepClusterSubmit = p.getTasks().create("prepareClusterSubmit", PrepareForClusterSubmit.class);
 		prepClusterSubmit = taskInit.apply(prepClusterSubmit)
