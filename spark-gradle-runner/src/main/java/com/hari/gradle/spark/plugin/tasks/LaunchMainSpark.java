@@ -118,8 +118,10 @@ public class LaunchMainSpark {
 			int exit = launch.exitValue();
 			if (exit == 0)
 				SPGLogger.logInfo.accept("Spark job completed successfully ");
-			else if (exit == 1)
-				SPGLogger.logInfo.accept("Spark job terminated with errors , please check stdErr.txt and stdOut.txt ");
+			else if (exit == 1) {
+				SPGLogger.logError.accept("Spark job terminated with errors , please check stdErr.txt and stdOut.txt ");
+				throw new RuntimeException("Spark application failed");
+			}
 		} catch (IOException | InterruptedException e) {
 			SPGLogger.logError.accept("LaunchMainSpark exited with an error " + e.getLocalizedMessage());
 		}

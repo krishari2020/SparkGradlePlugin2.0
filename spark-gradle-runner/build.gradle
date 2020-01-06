@@ -15,6 +15,7 @@ repositories {
 
 dependencies {
   compile "org.gradle:gradle-core:5.6.2","org.apache.spark:spark-sql_2.11:2.4.0","org.apache.spark:spark-launcher_2.11:2.4.0","org.apache.hadoop:hadoop-common:2.7.3","org.apache.hadoop:hadoop-hdfs:2.7.3"
+  testImplementation gradleTestKit(),'junit:junit:4.12'
 }
 
 task sourceJar(type:Jar) {
