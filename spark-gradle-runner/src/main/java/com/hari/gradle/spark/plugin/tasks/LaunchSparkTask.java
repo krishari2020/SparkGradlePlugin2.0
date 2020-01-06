@@ -80,8 +80,8 @@ public class LaunchSparkTask extends DefaultTask {
 				? new File(settings.getErrRedirect())
 				: new File(p.getBuildDir().toPath() + File.separator + STD_ERR);
 		SPGLogger.logInfo.accept(String.format("Error redirected to log file %s", errFile.toPath().toString()));
-		File outFile = (settings.getErrRedirect() != null && !settings.getErrRedirect().isEmpty())
-				? new File(settings.getErrRedirect())
+		File outFile = (settings.getOutRedirect() != null && !settings.getOutRedirect().isEmpty())
+				? new File(settings.getOutRedirect())
 				: new File(p.getBuildDir().toPath() + File.separator + STD_OUT);
 		SPGLogger.logInfo.accept(String.format("Output redirected to log file %s", outFile.toPath().toString()));
 		List<Object> prgArgs = asList(new Object[] { settings.getAppName(), settings.getMaster(),

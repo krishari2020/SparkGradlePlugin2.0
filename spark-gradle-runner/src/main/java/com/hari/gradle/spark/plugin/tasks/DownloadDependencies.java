@@ -14,20 +14,22 @@ import org.gradle.api.tasks.TaskAction;
 import com.hari.gradle.spark.plugin.SPGLogger;
 
 /**
- * Copies spark and other required dependencies into
+ * Downloads spark and other required dependencies into
  * {@literal "build/sparkDeps"}
  * 
  * @author harim
  *
  */
 
-public class CopyDepsTask extends DefaultTask {
+public class DownloadDependencies extends DefaultTask {
 
 	@TaskAction
-	public void copyDep() {
+	public void downloadDeps() {
 		Project p = getProject();
-		// download all compile time dependencies into folder ${BUILD_DIR/jobDeps}
-		final Configuration deps = p.getConfigurations().getByName("compile");
+		// download all compile-time/run-time dependencies into folder
+		// ${BUILD_DIR/jobDeps}
+		final Configuration compileDeps = p.getConfigurations().getByName("compile");
+		final Configuration runtimeDeps = p.getConfigurations().getByName("runtime");
 		p.copy(new Action<CopySpec>() {
 			@Override
 			public void execute(CopySpec copySpec) {
@@ -36,7 +38,8 @@ public class CopyDepsTask extends DefaultTask {
 				SPGLogger.logInfo.accept(
 						String.format("Local path for downloading all required jars for spark job is %s", jobDepsPath));
 				copySpec.into(jobDepsPath);
-				copySpec.from(deps);
+				copySpec.from(compileDeps);
+				copySpec.from(runtimeDeps);
 			}
 		});
 	}

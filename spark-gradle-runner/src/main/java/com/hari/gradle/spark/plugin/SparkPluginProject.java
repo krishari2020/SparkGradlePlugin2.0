@@ -1,5 +1,11 @@
 package com.hari.gradle.spark.plugin;
 
+import static com.hari.gradle.spark.plugin.Constants.DOWNLOAD_DEPENDENCIES_TASK;
+import static com.hari.gradle.spark.plugin.Constants.DOWNLOAD_DEPENDENCIES_TASK_DESC;
+import static com.hari.gradle.spark.plugin.Constants.LAUNCH_SPARK_TASK;
+import static com.hari.gradle.spark.plugin.Constants.LAUNCH_SPARK_TASK_DESC;
+import static com.hari.gradle.spark.plugin.Constants.PREPARE_CLUSTER_SUBMIT_TASK;
+import static com.hari.gradle.spark.plugin.Constants.PREPARE_CLUSTER_SUBMIT_TASK_DESC;
 import static com.hari.gradle.spark.plugin.Settings.SETTINGS_EXTN;
 import static com.hari.gradle.spark.plugin.SparkRunMode.getRunMode;
 import static java.util.Arrays.asList;
@@ -15,7 +21,7 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.specs.Spec;
 
-import com.hari.gradle.spark.plugin.tasks.CopyDepsTask;
+import com.hari.gradle.spark.plugin.tasks.DownloadDependencies;
 import com.hari.gradle.spark.plugin.tasks.LaunchSparkTask;
 import com.hari.gradle.spark.plugin.tasks.PrepareForClusterSubmit;
 
@@ -51,14 +57,13 @@ public class SparkPluginProject implements Plugin<Project> {
 					}
 				})));
 		final Settings settings = p.getExtensions().create(SETTINGS_EXTN, Settings.class);
-		Task copyDeps = p.getTasks().create("copyDeps", CopyDepsTask.class);
-		copyDeps = taskInit.apply(copyDeps).apply("Copies all dependencies required to run spark job")
+		Task downloadDeps = p.getTasks().create(DOWNLOAD_DEPENDENCIES_TASK, DownloadDependencies.class);
+		downloadDeps = taskInit.apply(downloadDeps).apply(DOWNLOAD_DEPENDENCIES_TASK_DESC)
 				.apply(p.getTasks().getByName("jar")).apply(GROUP);
 
-		Task prepClusterSubmit = p.getTasks().create("prepareClusterSubmit", PrepareForClusterSubmit.class);
-		prepClusterSubmit = taskInit.apply(prepClusterSubmit)
-				.apply(" Copies all spark deps into the cluster to create a distributed cache in Yarn").apply(copyDeps)
-				.apply(GROUP);
+		Task prepClusterSubmit = p.getTasks().create(PREPARE_CLUSTER_SUBMIT_TASK, PrepareForClusterSubmit.class);
+		prepClusterSubmit = taskInit.apply(prepClusterSubmit).apply(PREPARE_CLUSTER_SUBMIT_TASK_DESC)
+				.apply(downloadDeps).apply(GROUP);
 		prepClusterSubmit.onlyIf(new Spec<Task>() {
 			@Override
 			public boolean isSatisfiedBy(Task arg0) {
@@ -68,9 +73,8 @@ public class SparkPluginProject implements Plugin<Project> {
 				return spkRunMode == SparkRunMode.YARN_CLIENT || spkRunMode == SparkRunMode.YARN_CLUSTER;
 			}
 		});
-		Task launch = p.getTasks().create("launch", LaunchSparkTask.class);
-		launch = taskInit.apply(launch).apply("Launch a spark-job with overrided settings").apply(prepClusterSubmit)
-				.apply(GROUP);
+		Task launchSpark = p.getTasks().create(LAUNCH_SPARK_TASK, LaunchSparkTask.class);
+		launchSpark = taskInit.apply(launchSpark).apply(LAUNCH_SPARK_TASK_DESC).apply(prepClusterSubmit).apply(GROUP);
 	}
 
 	private static interface GradleTaskInitializer
