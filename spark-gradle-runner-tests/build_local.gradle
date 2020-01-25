@@ -1,13 +1,9 @@
 buildscript {
 repositories {
- mavenLocal()
- maven {
-  	url "http://repo.gradle.org/gradle/libs-releases-local"
-  }
- mavenCentral()
+  mavenCentral()
 }
 dependencies {
-	classpath 'io.github.krishari2020:spark-gradle-plugin:1.0.3-SNAPSHOT'
+	classpath 'io.github.krishari2020:spark-gradle-plugin:1.1.1'
   }
 }
 
@@ -18,7 +14,7 @@ apply plugin : 'eclipse'
 dependencies {
   compile 'org.apache.spark:spark-sql_2.11:2.4.0'
   implementation 'org.scala-lang:scala-library:2.11.8'
-  runtime 'org.apache.spark:spark-launcher_2.11:2.4.0','com.sun.jersey:jersey-client:1.9','org.apache.spark:spark-yarn_2.11:2.4.0', 'io.github.krishari2020:spark-gradle-plugin:1.0.3-SNAPSHOT'
+  runtime 'org.apache.spark:spark-launcher_2.11:2.4.0','com.sun.jersey:jersey-client:1.9','org.apache.spark:spark-yarn_2.11:2.4.0', 'io.github.krishari2020:spark-gradle-plugin:1.1.1'
 }
 
 settings {
