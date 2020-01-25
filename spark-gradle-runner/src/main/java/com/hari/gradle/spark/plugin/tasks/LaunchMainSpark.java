@@ -13,9 +13,13 @@ import static java.util.stream.Collectors.toList;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.spark.launcher.SparkLauncher;
@@ -53,6 +57,16 @@ public class LaunchMainSpark {
 	 * @param args[8]
 	 *            - Spark user overridden configs.
 	 */
+
+	private static final Predicate<String> isValidConf = conf -> conf != null && !conf.isEmpty()
+			&& !conf.equals("EMPTY");
+
+	public static final Function<String, List<String>> parseConf = conf -> asList(conf.split("\\s*,\\s*spark."))
+			.stream().filter(con -> con != null).map(con1 -> con1.trim()).filter(con2 -> !con2.isEmpty())
+			.map(parsed -> "spark." + parsed).collect(toList());
+
+	public static final Function<String, List<String>> parseConf2 = conf -> asList(conf.split(",")).stream()
+			.filter(Objects::isNull).filter(conf2 -> conf2.contains("=")).collect(toList());
 
 	public static void main(String args[]) {
 		if (args == null || args.length != 8)
@@ -98,20 +112,7 @@ public class LaunchMainSpark {
 					}).map(launch3 -> {
 						// parse out the comma separated spark configs
 						// each parsed record contains key separated by "=" followed by its value.
-						if (sparkConfig == null || sparkConfig.isEmpty() || sparkConfig.equals("EMPTY"))
-							return launch3;
-						Map<String, String> sparkConfVars = Environment
-								.toMap(asList(sparkConfig.split(",")).stream().map(conf -> conf.trim()).map(conf -> {
-									String[] keyValue = conf.split("=");
-									if (keyValue == null || keyValue.length != 2) {
-										SPGLogger.logError.accept(String.format(" Incorrect key value property %s ",
-												keyValue.toString()));
-										throw new IllegalArgumentException(
-												"Incorrect spark config values, check the log for more details.");
-									}
-									return Environment.newInstance(keyValue[0], keyValue[1]);
-								}).collect(toList()));
-						sparkConfVars.forEach((key, value) -> launch3.setConf(key, value));
+						buildSparkConf(sparkConfig).forEach((key, value) -> launch3.setConf(key, value));
 						return launch3;
 					}).get().launch();
 			launch.waitFor();
@@ -127,7 +128,30 @@ public class LaunchMainSpark {
 		}
 	}
 
-	private static class Environment {
+	/***
+	 * Function to parse spark config into corresponding key value confs.
+	 * 
+	 * @param sparkConfig
+	 *            - unparsed spark configuration as String.
+	 * @return Map of key value pairs.
+	 */
+
+	public static Map<String, String> buildSparkConf(String conf) {
+		final List<String> parsedConf = Optional.ofNullable(conf).filter(isValidConf)
+				.flatMap(conf1 -> Optional.of(parseConf2.apply(conf1))).orElse(Collections.emptyList());
+		return Environment.toMap(parsedConf.stream().map(cnf -> {
+			int eqIndex = cnf.indexOf("=");
+			String key = cnf.substring(0, eqIndex);
+			String value = cnf.substring(eqIndex + 1);
+			if (key == null) {
+				SPGLogger.logError.accept("Spark conf key cannot be null");
+				throw new IllegalArgumentException("Incorrect spark config values, check the log for more details.");
+			}
+			return Environment.newInstance(key, value);
+		}).collect(toList()));
+	}
+
+	public static class Environment {
 		final String name;
 		final String value;
 

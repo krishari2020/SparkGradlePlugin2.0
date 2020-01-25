@@ -52,10 +52,11 @@ public class SparkGradlePluginTest {
 		SPGLogger.logInfo.accept(String.format("Outcome of the task is %s", result.task(":launchSpark").getOutcome()));
 		assertEquals(TaskOutcome.SUCCESS, result.task(":launchSpark").getOutcome());
 	}
-	
+
 	public static class FilterEmployeeBfromSource {
 
 		private static final String TARGET_FILE = "employeeOfB.json";
+
 		public static void main(String[] args) {
 			SparkSession spark = SparkSession.builder().getOrCreate();
 			Dataset<Row> sourceDf = spark.read().json("source1.json");
