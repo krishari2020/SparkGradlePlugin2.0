@@ -22,6 +22,15 @@ import org.junit.rules.TemporaryFolder;
 
 import com.hari.gradle.spark.plugin.SPGLogger;
 
+/**
+ * Plugin integration test and run 'launcSpark' task in local mode with sample
+ * build.gradle file under src/test/resources/build.gradle.
+ * 
+ * @author harim
+ *
+ */
+// TODO write test cases for submitting job onto the cluster.
+
 public class SparkGradlePluginTest {
 
 	@Rule

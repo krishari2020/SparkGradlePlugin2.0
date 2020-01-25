@@ -3,6 +3,7 @@ package com.hari.gradle.spark.plugin.tasks;
 import static com.hari.gradle.spark.plugin.Constants.DISTRIBUTED_YARN_CACHE_PATH;
 import static com.hari.gradle.spark.plugin.Constants.HADOOP_FS;
 import static com.hari.gradle.spark.plugin.Constants.HADOOP_HOME;
+import static com.hari.gradle.spark.plugin.Constants.HADOOP_HOME_DIR;
 import static com.hari.gradle.spark.plugin.Constants.HADOOP_USER_NAME;
 import static com.hari.gradle.spark.plugin.Constants.JOB_DEPS_FILE_SUFFIX;
 import static com.hari.gradle.spark.plugin.Constants.SPARK_CONF_DEPLOY_MODE;
@@ -100,6 +101,12 @@ public class LaunchSparkTask extends DefaultTask {
 				SPGLogger.logFine.accept(PROPERTY_SET_VALUE.apply(SPARK_MAIN_CLASSPATH, classPath));
 				spec.getEnvironment().put(SPARK_MAIN_CLASSPATH, classPath);
 				if (runMode == SparkRunMode.YARN_CLIENT || runMode == SparkRunMode.YARN_CLUSTER) {
+					// A possible scenario where HADOOP_HOME related system properties are not set
+					// is say when PrepareClusterSubmit is skipped which currently does setting
+					// these properties.
+					System.setProperty(HADOOP_HOME, settings.getHadoopHome());
+					System.setProperty(HADOOP_HOME_DIR, settings.getHadoopHome());
+					System.setProperty(YARN_CONF_DIR, settings.getHadoopConf());
 					SPGLogger.logFine.accept(
 							String.format("The spark job is to be submitted in yarn cluster and the deployMode is %s",
 									settings.getMode()));

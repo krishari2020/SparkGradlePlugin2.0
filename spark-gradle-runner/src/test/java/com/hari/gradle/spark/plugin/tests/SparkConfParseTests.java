@@ -7,6 +7,13 @@ import org.junit.Test;
 import com.hari.gradle.spark.plugin.tasks.LaunchMainSpark;
 import com.hari.gradle.spark.plugin.tasks.LaunchMainSpark.Environment;
 
+/**
+ * Test cases for spark config parsing.
+ * 
+ * @author harim
+ *
+ */
+
 public class SparkConfParseTests {
 
 	@Test
@@ -33,7 +40,6 @@ public class SparkConfParseTests {
 				Environment.newInstance("spark.driver.extraJavaOptions", "-XX:+PrintGCDetails -XX:+PrintGCTimeStamps"));
 		result.entrySet().stream().allMatch(entry -> parsedSparkConf.containsKey(entry.getKey())
 				&& parsedSparkConf.get(entry.getKey()).equals(entry.getValue()));
-
 	}
 
 }
