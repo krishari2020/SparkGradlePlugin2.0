@@ -4,7 +4,7 @@ apply plugin: 'java-gradle-plugin'
 apply plugin: 'signing'
 apply plugin: 'eclipse'
 group = 'io.github.krishari2020'
-version = '1.1.1-SNAPSHOT'
+version = '1.1.5'
 
 repositories {
   mavenCentral()
