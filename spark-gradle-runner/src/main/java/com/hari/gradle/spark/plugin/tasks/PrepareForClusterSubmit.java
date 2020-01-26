@@ -6,9 +6,8 @@ import static com.hari.gradle.spark.plugin.Constants.HADOOP_USER_NAME;
 import static com.hari.gradle.spark.plugin.Constants.JOB_DEPS_FILE_SUFFIX;
 import static com.hari.gradle.spark.plugin.Constants.YARN_CONF_DIR;
 import static com.hari.gradle.spark.plugin.Constants.YARN_LIB_ZIP_FILE;
-import static com.hari.gradle.spark.plugin.SPGLogger.PROPERTY_SET_VALUE;
 import static com.hari.gradle.spark.plugin.Settings.SETTINGS_EXTN;
-import static com.hari.gradle.spark.plugin.Utils.getFileSystem;
+import static com.hari.gradle.spark.plugin.Utils.getFS;
 import static com.hari.gradle.spark.plugin.tasks.LaunchSparkTask.JAR_FILTER;
 import static java.util.Arrays.asList;
 
@@ -61,7 +60,6 @@ public class PrepareForClusterSubmit extends DefaultTask {
 		// the required jars are not more than what is required for driver/executor
 		// classpath. The zip file would be created under ${PROJECT_BUILD_DIR} as
 		// ${YARN_LIB_ZIP_FILE}
-		final String hadoopConf = settings.getHadoopConf();
 		final String depsDownloadedPath = p.getBuildDir().toPath() + File.separator + JOB_DEPS_FILE_SUFFIX
 				+ File.separator;
 		SPGLogger.logInfo.accept(String.format(
@@ -101,7 +99,8 @@ public class PrepareForClusterSubmit extends DefaultTask {
 		if (!Files.exists(Paths.get(zipPath)))
 			throw new FileNotFoundException("yarn_libs not found , hence failing the task");
 
-		int result = ToolRunner.run(new HDFSCopier(), new String[] { hadoopConf, zipPath, destJarPath });
+		int result = ToolRunner.run(new HDFSCopier(settings.getHadoopHome(), settings.getHadoopUserName(),
+				settings.getHadoopConf(), zipPath, destJarPath), new String[] {});
 		if (result != 0) {
 			SPGLogger.logError.accept("Failed to copy yarn_libs zip to HDFS , hence failing the task");
 			throw new RuntimeException("HDFS copy operation failed with exit code" + result);
@@ -124,23 +123,29 @@ public class PrepareForClusterSubmit extends DefaultTask {
 	 */
 
 	class HDFSCopier extends Configured implements Tool {
+		private final String hadoopHome;
+		private final String hadoopUser;
+		private final String hadoopConf;
+		private final String src;
+		private final String dest;
+
+		HDFSCopier(String hadoopHome, String hadoopUser, String hadoopConf, String srcPath, String destPath) {
+			this.hadoopHome = hadoopHome;
+			this.hadoopUser = hadoopUser;
+			this.hadoopConf = hadoopConf;
+			this.src = srcPath;
+			this.dest = destPath;
+		}
 
 		@Override
 		public int run(String[] args) throws Exception {
-			String hadoopHome = args[0];
-			String inputPath = args[1];
-			String outPath = args[2];
-			SPGLogger.logFine.accept("Printing the arguments passed to HDFSCopier ");
-			SPGLogger.logFine.accept(PROPERTY_SET_VALUE.apply("Path containing the hadoop configuration", hadoopHome));
-			SPGLogger.logFine.accept(PROPERTY_SET_VALUE
-					.apply("Input zip file containing jars required for driver/executor classpath", inputPath));
-			SPGLogger.logFine
-					.accept(PROPERTY_SET_VALUE.apply("HDFS location to which zip file is uploaded to", outPath));
-			final FileSystem hadoopFs = getFileSystem(hadoopHome);
-			hadoopFs.copyFromLocalFile(new Path(inputPath), new Path(outPath));
-			hadoopFs.setPermission(new Path(outPath), new FsPermission("777"));
-			SPGLogger.logInfo.accept(String.format("Copied jars archive from %s to HDFS location %s",
-					inputPath.toString(), outPath.toString()));
+			// set the hadoop user and the yarn_conf_dir system property.
+			System.setProperty(HADOOP_USER_NAME, hadoopUser);
+			System.setProperty(YARN_CONF_DIR, hadoopConf);
+			final FileSystem hadoopFs = getFS.apply(hadoopHome).apply(hadoopConf);
+			hadoopFs.copyFromLocalFile(new Path(src), new Path(dest));
+			hadoopFs.setPermission(new Path(dest), new FsPermission("777"));
+			SPGLogger.logInfo.accept(String.format("Copied jars archive from %s to HDFS location %s", src, dest));
 			hadoopFs.close();
 			return 0;
 		}

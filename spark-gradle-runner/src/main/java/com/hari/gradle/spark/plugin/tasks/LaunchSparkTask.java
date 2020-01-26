@@ -3,7 +3,6 @@ package com.hari.gradle.spark.plugin.tasks;
 import static com.hari.gradle.spark.plugin.Constants.DISTRIBUTED_YARN_CACHE_PATH;
 import static com.hari.gradle.spark.plugin.Constants.HADOOP_FS;
 import static com.hari.gradle.spark.plugin.Constants.HADOOP_HOME;
-import static com.hari.gradle.spark.plugin.Constants.HADOOP_HOME_DIR;
 import static com.hari.gradle.spark.plugin.Constants.HADOOP_USER_NAME;
 import static com.hari.gradle.spark.plugin.Constants.JOB_DEPS_FILE_SUFFIX;
 import static com.hari.gradle.spark.plugin.Constants.SPARK_CONF_DEPLOY_MODE;
@@ -15,7 +14,7 @@ import static com.hari.gradle.spark.plugin.Constants.YARN_CONF_DIR;
 import static com.hari.gradle.spark.plugin.SPGLogger.PROPERTY_SET_VALUE;
 import static com.hari.gradle.spark.plugin.Settings.SETTINGS_EXTN;
 import static com.hari.gradle.spark.plugin.SparkRunMode.getRunMode;
-import static com.hari.gradle.spark.plugin.Utils.getFileSystem;
+import static com.hari.gradle.spark.plugin.Utils.getFS;
 import static java.util.Arrays.asList;
 
 import java.io.File;
@@ -23,6 +22,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.hadoop.fs.FileSystem;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
@@ -104,9 +104,6 @@ public class LaunchSparkTask extends DefaultTask {
 					// A possible scenario where HADOOP_HOME related system properties are not set
 					// is say when PrepareClusterSubmit is skipped which currently does setting
 					// these properties.
-					System.setProperty(HADOOP_HOME, settings.getHadoopHome());
-					System.setProperty(HADOOP_HOME_DIR, settings.getHadoopHome());
-					System.setProperty(YARN_CONF_DIR, settings.getHadoopConf());
 					SPGLogger.logFine.accept(
 							String.format("The spark job is to be submitted in yarn cluster and the deployMode is %s",
 									settings.getMode()));
@@ -114,9 +111,9 @@ public class LaunchSparkTask extends DefaultTask {
 					SPGLogger.logFine.accept(PROPERTY_SET_VALUE.apply(HADOOP_USER_NAME, settings.getHadoopUserName()));
 					spec.getEnvironment().put(YARN_CONF_DIR, settings.getHadoopConf());
 					SPGLogger.logFine.accept(PROPERTY_SET_VALUE.apply(YARN_CONF_DIR, settings.getHadoopConf()));
-					String distYarnCachePath = new StringBuilder(
-							getFileSystem(settings.getHadoopHome()).getConf().get(HADOOP_FS))
-									.append(settings.getJarZipDestPath()).toString();
+					FileSystem fs = getFS.apply(settings.getHadoopHome()).apply(settings.getHadoopConf());
+					String distYarnCachePath = new StringBuilder(fs.getConf().get(HADOOP_FS))
+							.append(settings.getJarZipDestPath()).toString();
 					spec.getEnvironment().put(DISTRIBUTED_YARN_CACHE_PATH, distYarnCachePath);
 					SPGLogger.logFine.accept(PROPERTY_SET_VALUE.apply(DISTRIBUTED_YARN_CACHE_PATH, distYarnCachePath));
 					spec.getEnvironment().put(SPARK_CONF_DEPLOY_MODE, settings.getMode());
