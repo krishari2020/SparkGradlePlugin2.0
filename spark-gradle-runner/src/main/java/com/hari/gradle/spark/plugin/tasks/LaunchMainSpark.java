@@ -37,7 +37,7 @@ public class LaunchMainSpark {
 
 	/**
 	 * @param args[0]
-	 *            - Name of the spark app which is executed.
+	 *            - Name of the spark app to be executed.
 	 * @param args[1]
 	 *            - Master (can be local , cluster)
 	 * @param args[2]

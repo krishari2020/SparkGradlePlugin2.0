@@ -40,7 +40,8 @@ import com.hari.gradle.spark.plugin.SparkRunMode;
  * java process and the main class that would be invoked is
  * {@link com.hari.learning.gradle.spark.plugin.tasks.LaunchMainSpark } }.
  * 
- * Supported modes are 1) local 2) yarn - cluster 3) yarn - client
+ * Supported modes are 1) local 2) yarn - cluster (Support for yarn-client is
+ * still a subject of discussion)
  * 
  * @author harim
  *
@@ -58,13 +59,13 @@ public class LaunchSparkTask extends DefaultTask {
 	@TaskAction
 	public void launch() throws IOException {
 		final Project p = getProject();
-		Settings settings = (Settings) p.getExtensions().getByName(SETTINGS_EXTN);
-		String mainClass = settings.getMainClass();
+		final Settings settings = (Settings) p.getExtensions().getByName(SETTINGS_EXTN);
+		final String mainClass = settings.getMainClass();
 		// mainClass cannot be empty.
 		if (mainClass == null || mainClass.isEmpty())
 			throw new IllegalArgumentException(" Main class cannot be empty");
-		File libFolder = new File(p.getBuildDir().toPath().toString() + File.separator + "libs");
-		File[] files = libFolder.listFiles(JAR_FILTER);
+		final File libFolder = new File(p.getBuildDir().toPath().toString() + File.separator + "libs");
+		final File[] files = libFolder.listFiles(JAR_FILTER);
 		if (files == null || files.length == 0)
 			throw new IllegalArgumentException("Build failed with generating the output jar.");
 		if (files.length != 1)
@@ -75,17 +76,17 @@ public class LaunchSparkTask extends DefaultTask {
 		final String classPath = p.getBuildDir().toPath() + File.separator + JOB_DEPS_FILE_SUFFIX + File.separator
 				+ "*";
 		SPGLogger.logFine.accept(String.format("Classpath required for invoking SparkLauncher %s ", classPath));
-		// determine the job needs to run in cluster or local machine.
+		// determine whether job needs to run in cluster or local machine.
 		final SparkRunMode runMode = getRunMode.apply(settings.getMaster()).apply(settings.getMode());
-		File errFile = (settings.getErrRedirect() != null && !settings.getErrRedirect().isEmpty())
+		final File errFile = (settings.getErrRedirect() != null && !settings.getErrRedirect().isEmpty())
 				? new File(settings.getErrRedirect())
 				: new File(p.getBuildDir().toPath() + File.separator + STD_ERR);
 		SPGLogger.logInfo.accept(String.format("Error redirected to log file %s", errFile.toPath().toString()));
-		File outFile = (settings.getOutRedirect() != null && !settings.getOutRedirect().isEmpty())
+		final File outFile = (settings.getOutRedirect() != null && !settings.getOutRedirect().isEmpty())
 				? new File(settings.getOutRedirect())
 				: new File(p.getBuildDir().toPath() + File.separator + STD_OUT);
 		SPGLogger.logInfo.accept(String.format("Output redirected to log file %s", outFile.toPath().toString()));
-		List<Object> prgArgs = asList(new Object[] { settings.getAppName(), settings.getMaster(),
+		final List<Object> prgArgs = asList(new Object[] { settings.getAppName(), settings.getMaster(),
 				files[0].toPath().toString(), mainClass, errFile, outFile, sparkHome, settings.getSparkConfig() });
 		SPGLogger.logFine.accept("Printing input args to LaunchMainSpark main method");
 		p.javaexec(new Action<JavaExecSpec>() {
@@ -101,9 +102,6 @@ public class LaunchSparkTask extends DefaultTask {
 				SPGLogger.logFine.accept(PROPERTY_SET_VALUE.apply(SPARK_MAIN_CLASSPATH, classPath));
 				spec.getEnvironment().put(SPARK_MAIN_CLASSPATH, classPath);
 				if (runMode == SparkRunMode.YARN_CLIENT || runMode == SparkRunMode.YARN_CLUSTER) {
-					// A possible scenario where HADOOP_HOME related system properties are not set
-					// is say when PrepareClusterSubmit is skipped which currently does setting
-					// these properties.
 					SPGLogger.logFine.accept(
 							String.format("The spark job is to be submitted in yarn cluster and the deployMode is %s",
 									settings.getMode()));

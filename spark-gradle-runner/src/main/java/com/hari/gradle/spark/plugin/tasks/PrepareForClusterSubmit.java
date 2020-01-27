@@ -49,6 +49,8 @@ import com.hari.gradle.spark.plugin.Settings;
 
 public class PrepareForClusterSubmit extends DefaultTask {
 
+	private static final FsPermission FULL_PERM = new FsPermission("777");
+
 	@TaskAction
 	public void zipAndUploadToCluster() throws Exception {
 		final Project p = getProject();
@@ -91,7 +93,7 @@ public class PrepareForClusterSubmit extends DefaultTask {
 		// Post successful creation of archive file it needs to be uploaded to HDFS
 		if (!Files.exists(Paths.get(zipPath)))
 			throw new FileNotFoundException("yarn_libs not found , hence failing the task");
-		FileSystem fs = getFS.apply(settings.getHadoopHome()).apply(settings.getHadoopConf());
+		final FileSystem fs = getFS.apply(settings.getHadoopHome()).apply(settings.getHadoopConf());
 		System.setProperty(HADOOP_USER_NAME, settings.getHadoopUserName());
 		System.setProperty(YARN_CONF_DIR, settings.getHadoopConf());
 		int result = ToolRunner.run(new HDFSCopier(fs, zipPath, destJarPath), new String[] {});
@@ -132,7 +134,7 @@ public class PrepareForClusterSubmit extends DefaultTask {
 			SPGLogger.logInfo.accept(String.format("Hadoop home + directory is set to %s",
 					System.getProperty(HADOOP_HOME), System.getProperty(HADOOP_HOME_DIR)));
 			fs.copyFromLocalFile(new Path(src), new Path(dest));
-			fs.setPermission(new Path(dest), new FsPermission("777"));
+			fs.setPermission(new Path(dest), FULL_PERM);
 			SPGLogger.logInfo.accept(String.format("Copied jars archive from %s to HDFS location %s", src, dest));
 			fs.close();
 			return 0;
