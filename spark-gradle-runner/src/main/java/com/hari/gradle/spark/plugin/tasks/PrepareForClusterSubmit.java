@@ -67,13 +67,6 @@ public class PrepareForClusterSubmit extends DefaultTask {
 		final String zipPath = p.getBuildDir().toPath().toString() + File.separator + YARN_LIB_ZIP_FILE;
 		final String destJarPath = settings.getJarZipDestPath();
 
-		// also set the hadoop.home.dir system property and hadoop_user_name property
-		// and yarn_conf_dir.
-
-		System.setProperty(HADOOP_HOME_DIR, settings.getHadoopHome());
-		System.setProperty(HADOOP_HOME, settings.getHadoopHome());
-		System.setProperty(HADOOP_USER_NAME, settings.getHadoopUserName());
-		System.setProperty(YARN_CONF_DIR, settings.getHadoopConf());
 		// Although I would like reduce significantly the size of the zip file
 		// I am not so familiar with algos for compressing files which are already
 		// compressed in the form of jar. Tried with few compression strategies
@@ -98,9 +91,10 @@ public class PrepareForClusterSubmit extends DefaultTask {
 		// Post successful creation of archive file it needs to be uploaded to HDFS
 		if (!Files.exists(Paths.get(zipPath)))
 			throw new FileNotFoundException("yarn_libs not found , hence failing the task");
-
-		int result = ToolRunner.run(new HDFSCopier(settings.getHadoopHome(), settings.getHadoopUserName(),
-				settings.getHadoopConf(), zipPath, destJarPath), new String[] {});
+		FileSystem fs = getFS.apply(settings.getHadoopHome()).apply(settings.getHadoopConf());
+		System.setProperty(HADOOP_USER_NAME, settings.getHadoopUserName());
+		System.setProperty(YARN_CONF_DIR, settings.getHadoopConf());
+		int result = ToolRunner.run(new HDFSCopier(fs, zipPath, destJarPath), new String[] {});
 		if (result != 0) {
 			SPGLogger.logError.accept("Failed to copy yarn_libs zip to HDFS , hence failing the task");
 			throw new RuntimeException("HDFS copy operation failed with exit code" + result);
@@ -123,30 +117,24 @@ public class PrepareForClusterSubmit extends DefaultTask {
 	 */
 
 	class HDFSCopier extends Configured implements Tool {
-		private final String hadoopHome;
-		private final String hadoopUser;
-		private final String hadoopConf;
+		private final FileSystem fs;
 		private final String src;
 		private final String dest;
 
-		HDFSCopier(String hadoopHome, String hadoopUser, String hadoopConf, String srcPath, String destPath) {
-			this.hadoopHome = hadoopHome;
-			this.hadoopUser = hadoopUser;
-			this.hadoopConf = hadoopConf;
+		HDFSCopier(FileSystem fs, String srcPath, String destPath) {
+			this.fs = fs;
 			this.src = srcPath;
 			this.dest = destPath;
 		}
 
 		@Override
 		public int run(String[] args) throws Exception {
-			// set the hadoop user and the yarn_conf_dir system property.
-			System.setProperty(HADOOP_USER_NAME, hadoopUser);
-			System.setProperty(YARN_CONF_DIR, hadoopConf);
-			final FileSystem hadoopFs = getFS.apply(hadoopHome).apply(hadoopConf);
-			hadoopFs.copyFromLocalFile(new Path(src), new Path(dest));
-			hadoopFs.setPermission(new Path(dest), new FsPermission("777"));
+			SPGLogger.logInfo.accept(String.format("Hadoop home + directory is set to %s",
+					System.getProperty(HADOOP_HOME), System.getProperty(HADOOP_HOME_DIR)));
+			fs.copyFromLocalFile(new Path(src), new Path(dest));
+			fs.setPermission(new Path(dest), new FsPermission("777"));
 			SPGLogger.logInfo.accept(String.format("Copied jars archive from %s to HDFS location %s", src, dest));
-			hadoopFs.close();
+			fs.close();
 			return 0;
 		}
 
