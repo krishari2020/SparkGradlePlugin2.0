@@ -1,0 +1,35 @@
+buildscript {
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+dependencies {
+	classpath 'io.github.krishari2020:spark-gradle-plugin:1.1.7'
+  }
+}
+
+apply plugin : 'scala'
+apply plugin : 'eclipse'
+apply plugin : 'spark-gradle-plugin'
+
+dependencies {
+  compile 'org.apache.spark:spark-sql_2.11:2.3.1','com.google.code.gson:gson:2.8.6'
+  runtime 'org.scala-lang:scala-library:2.11.8','io.github.krishari2020:spark-gradle-plugin:1.1.7','org.apache.spark:spark-yarn_2.11:2.3.1','org.apache.spark:spark-launcher_2.11:2.3.1','com.oracle.database.jdbc:ojdbc8:19.7.0.0'
+  configurations.compile.exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
+  configurations.compile.exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
+}
+
+
+task copyJars(type: Copy) {
+  from configurations.compile
+  from configurations.runtime
+  into 'project_deps'
+}
+
+settings {
+  mainClass 'com.hari.learning.customfuncs.test.UseMyCustomFunctionsWithJDBC'
+  sparkHome 'C:\\Softwares\\Spark2.3.1\\spark-2.3.1-bin-hadoop2.7'
+  hadoopHome 'C:\\Softwares\\Hadoop_Home'
+  scalaVersion '2.11'
+  appName 'UseMyCustomFunctionsWithJDBC'
+}
