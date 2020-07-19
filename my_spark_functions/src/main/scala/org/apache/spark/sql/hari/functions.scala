@@ -8,28 +8,56 @@ import java.lang.Long
 import java.sql.Timestamp
 import java.util.{ Calendar, Date, TimeZone }
 import org.apache.spark.sql.Column
-import org.apache.spark.sql.catalyst.expressions.`package`.NullIntolerant
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback
-import org.apache.spark.sql.catalyst.expressions.`package`.NullIntolerant
+import org.apache.spark.sql.catalyst.expressions.{ ExpressionDescription, NullIntolerant }
 
 object functions {
 
+  /**
+   * Given a timestamp value and a timezone returns true if the 'hour of the day' value falls between 0 (inclusive) and 12
+   *
+   * @param inpCol - input column of type Timestamp.
+   * @param timeZoneId - Id of the TimeZone , default value is UTC
+   */
+
   def isMorning(inpCol: Column, timeZoneId: String = "UTC"): Column = Column(Morning(inpCol.expr, Some(timeZoneId)))
+
+  /**
+   * Given a timestamp value and a timezone returns true if the 'hour of the day' value falls between 12 (inclusive) and 16
+   *
+   * @param inpCol - input column of type Timestamp.
+   * @param timeZoneId - Id of the TimeZone , default value is UTC
+   */
 
   def isAfternoon(inpCol: Column, timeZoneId: String = "UTC"): Column = Column(Afternoon(inpCol.expr, Some(timeZoneId)))
 
+  /**
+   * Given a timestamp value and a timezone returns true if the 'hour of the day' value falls between 16 (inclusive) and 20
+   *
+   * @param inpCol - input column of type Timestamp.
+   * @param timeZoneId - Id of the TimeZone , default value is UTC
+   */
+
   def isEvening(inpCol: Column, timeZoneId: String = "UTC"): Column = Column(Evening(inpCol.expr, Some(timeZoneId)))
+
+  /**
+   * Given a timestamp value and a timezone returns true if the 'hour of the day' value falls between 20 (inclusive) and 24
+   *
+   * @param inpCol - input column of type Timestamp.
+   * @param timeZoneId - Id of the TimeZone , default value is UTC
+   */
 
   def isNight(inpCol: Column, timeZoneId: String = "UTC"): Column = Column(Night(inpCol.expr, Some(timeZoneId)))
 
 }
 
-/**
- *  Column expression given a Timestamp/String column returns a boolean
- *  indicating whether it is Morning.
- *  @author harim
- */
-
+@ExpressionDescription(
+  usage = "_FUNC_(timestamp) - Returns true if the 'hour of the day' value falls between 0(inclusive) and 12.",
+  examples = """
+    Examples:
+      > SELECT _FUNC_('2020-06-30 10:00:00');
+       true
+  """)
 case class Morning(child: Expression, timeZoneId: Option[String] = None) extends UnaryExpression with ImplicitCastInputTypes with TimeZoneAwareExpression with NullIntolerant {
 
   lazy val hours: Hour = Hour(child, timeZoneId)
@@ -56,12 +84,13 @@ case class Morning(child: Expression, timeZoneId: Option[String] = None) extends
 
 }
 
-/**
- *  Column expression given a Timestamp/String column returns a boolean
- *  indicating whether it is Afternoon.
- *  @author harim
- */
-
+@ExpressionDescription(
+  usage = "_FUNC_(timestamp) - Returns true if the 'hour of the day' value falls between 12(inclusive) and 16.",
+  examples = """
+    Examples:
+      > SELECT _FUNC_('2020-06-30 14:00:00');
+       true
+  """)
 case class Afternoon(child: Expression, timeZoneId: Option[String] = None) extends UnaryExpression with ImplicitCastInputTypes with TimeZoneAwareExpression with NullIntolerant {
 
   lazy val hours: Hour = Hour(child, timeZoneId)
@@ -88,12 +117,13 @@ case class Afternoon(child: Expression, timeZoneId: Option[String] = None) exten
 
 }
 
-/**
- *  Column expression given a Timestamp/String column returns a boolean
- *  indicating whether it is Evening.
- *  @author harim
- */
-
+@ExpressionDescription(
+  usage = "_FUNC_(timestamp) - Returns true if the 'hour of the day' value falls between 16(inclusive) and 20.",
+  examples = """
+    Examples:
+      > SELECT _FUNC_('2020-06-30 18:00:00');
+       true
+  """)
 case class Evening(child: Expression, timeZoneId: Option[String] = None) extends UnaryExpression with ImplicitCastInputTypes with TimeZoneAwareExpression with NullIntolerant {
 
   override def dataType: DataType = BooleanType
@@ -121,12 +151,13 @@ case class Evening(child: Expression, timeZoneId: Option[String] = None) extends
 
 }
 
-/**
- *  Column expression given a Timestamp/String column returns a boolean
- *  indicating whether it is Night.
- *  @author harim
- */
-
+@ExpressionDescription(
+  usage = "_FUNC_(timestamp) - Returns true if the 'hour of the day' value falls between 20(inclusive) and 24.",
+  examples = """
+    Examples:
+      > SELECT _FUNC_('2020-06-30 22:00:00');
+       true
+  """)
 case class Night(child: Expression, timeZoneId: Option[String] = None) extends UnaryExpression with ImplicitCastInputTypes with TimeZoneAwareExpression with NullIntolerant {
 
   override def dataType: DataType = BooleanType
