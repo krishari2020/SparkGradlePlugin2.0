@@ -1,8 +1,5 @@
 package com.hari.gradle.spark.plugin;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Encapsulates all constants required.
  *
@@ -18,13 +15,13 @@ public class Constants {
 	public static final String HADOOP_HOME_DIR = "hadoop.home.dir";
 	public static final String HADOOP_FS = "fs.defaultFS";
 	public static final String HDFS_URL_PREFIX = "hdfs://";
-	public static final Map<String, String> HADOOP_FS_CONF;
+	/*public static final Map<String, String> HADOOP_FS_CONF;
 	static {
 		HADOOP_FS_CONF = new HashMap<>();
 		HADOOP_FS_CONF.put("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
 		HADOOP_FS_CONF.put("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
 	}
-
+*/
 	// Yarn related constants
 	public static final String YARN_CONF_DIR = "YARN_CONF_DIR";
 	public static final String YARN_LIB_ZIP_FILE = "yarn_libs.zip";

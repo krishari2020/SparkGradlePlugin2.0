@@ -65,7 +65,7 @@ public class LaunchMainSpark {
 			.stream().filter(con -> con != null).map(con1 -> con1.trim()).filter(con2 -> !con2.isEmpty())
 			.map(parsed -> "spark." + parsed).collect(toList());
 
-	public static final Function<String, List<String>> parseConf2 = conf -> asList(conf.split(",")).stream()
+	public static final Function<String, List<String>> parseConf2 = conf -> asList(conf.split(";")).stream()
 			.filter(Objects::isNull).filter(conf2 -> conf2.contains("=")).collect(toList());
 
 	public static void main(String args[]) {
@@ -94,7 +94,7 @@ public class LaunchMainSpark {
 				.ofNullable(!envs.isEmpty() && envs.size() == 3 ? new SparkLauncher(envs) : new SparkLauncher());
 		try {
 			Process launch = launcher.map(launch1 -> launch1.setAppName(appName).setMaster(master)
-					.setMainClass(mainClass).setSparkHome(sparkHome).setAppResource(jarPath)
+					.setMainClass(mainClass).setSparkHome(sparkHome).addJar(jarPath).setAppResource(jarPath)
 					.redirectError(new File(errFile)).redirectOutput(new File(outFile)).setVerbose(true))
 					.map(launch2 -> {
 						if (yarnDistributedClassPath != null && !yarnDistributedClassPath.isEmpty()) {

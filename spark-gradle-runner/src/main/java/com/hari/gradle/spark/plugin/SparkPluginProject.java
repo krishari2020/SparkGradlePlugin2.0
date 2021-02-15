@@ -12,7 +12,6 @@ import static java.util.Arrays.asList;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.function.Function;
 
 import org.gradle.api.Action;
 import org.gradle.api.Plugin;
@@ -58,12 +57,14 @@ public class SparkPluginProject implements Plugin<Project> {
 				})));
 		final Settings settings = p.getExtensions().create(SETTINGS_EXTN, Settings.class);
 		Task downloadDeps = p.getTasks().create(DOWNLOAD_DEPENDENCIES_TASK, DownloadDependencies.class);
-		downloadDeps = taskInit.apply(downloadDeps).apply(DOWNLOAD_DEPENDENCIES_TASK_DESC)
-				.apply(p.getTasks().getByName("jar")).apply(GROUP);
+		downloadDeps.setDescription(DOWNLOAD_DEPENDENCIES_TASK_DESC);
+		downloadDeps.setGroup(GROUP);
+		downloadDeps.dependsOn(p.getTasks().getByName("clean"), p.getTasks().getByName("jar"));
 
 		Task prepClusterSubmit = p.getTasks().create(PREPARE_CLUSTER_SUBMIT_TASK, PrepareForClusterSubmit.class);
-		prepClusterSubmit = taskInit.apply(prepClusterSubmit).apply(PREPARE_CLUSTER_SUBMIT_TASK_DESC)
-				.apply(downloadDeps).apply(GROUP);
+		prepClusterSubmit.setDescription(PREPARE_CLUSTER_SUBMIT_TASK_DESC);
+		prepClusterSubmit.setGroup(GROUP);
+		prepClusterSubmit.dependsOn(downloadDeps);
 		prepClusterSubmit.onlyIf(new Spec<Task>() {
 			@Override
 			public boolean isSatisfiedBy(Task arg0) {
@@ -74,18 +75,8 @@ public class SparkPluginProject implements Plugin<Project> {
 			}
 		});
 		Task launchSpark = p.getTasks().create(LAUNCH_SPARK_TASK, LaunchSparkTask.class);
-		launchSpark = taskInit.apply(launchSpark).apply(LAUNCH_SPARK_TASK_DESC).apply(prepClusterSubmit).apply(GROUP);
+		launchSpark.setDescription(LAUNCH_SPARK_TASK_DESC);
+		launchSpark.dependsOn(prepClusterSubmit);
+		launchSpark.setGroup(GROUP);
 	}
-
-	private static interface GradleTaskInitializer
-			extends Function<Task, Function<String, Function<Task, Function<String, Task>>>> {
-	}
-
-	private GradleTaskInitializer taskInit = task -> description -> depTask -> taskGroup -> {
-		task.setDescription(description);
-		task.dependsOn(depTask);
-		task.setGroup(taskGroup);
-		return task;
-	};
-
 }

@@ -41,7 +41,7 @@ public class Utils {
 				@Override
 				public boolean accept(File dir, String file) {
 					return file.endsWith(".xml");
-				}
+				}	
 			})).stream().map(file -> new Path(file.toPath().toAbsolutePath().toString())).reduce(new Configuration(),
 					(conf, site) -> {
 						conf.addResource(site);
