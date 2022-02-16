@@ -6,7 +6,6 @@ import static com.hari.gradle.spark.plugin.Constants.HADOOP_USER_NAME;
 import static com.hari.gradle.spark.plugin.Constants.JOB_DEPS_FILE_SUFFIX;
 import static com.hari.gradle.spark.plugin.Constants.YARN_CONF_DIR;
 import static com.hari.gradle.spark.plugin.Constants.YARN_LIB_ZIP_FILE;
-import static com.hari.gradle.spark.plugin.Settings.SETTINGS_EXTN;
 import static com.hari.gradle.spark.plugin.Utils.getFS;
 import static com.hari.gradle.spark.plugin.tasks.LaunchSparkTask.JAR_FILTER;
 import static java.util.Arrays.asList;
@@ -54,7 +53,7 @@ public class PrepareForClusterSubmit extends DefaultTask {
 	@TaskAction
 	public void zipAndUploadToCluster() throws Exception {
 		final Project p = getProject();
-		Settings settings = retrieveSettings(p);
+		Settings settings = Settings.getSettings(p);
 		// Require HADOOP_CONF_DIR to be set to run in cluster.
 		if (settings.getHadoopHome() == null || settings.getHadoopHome().length() == 0)
 			throw new IllegalArgumentException("Invalid hadoopHome property value");
@@ -102,12 +101,6 @@ public class PrepareForClusterSubmit extends DefaultTask {
 			throw new RuntimeException("HDFS copy operation failed with exit code" + result);
 		}
 
-	}
-
-	private Settings retrieveSettings(Project p) {
-		if (p == null)
-			throw new IllegalArgumentException(" Project parameter cannot be passed a null value");
-		return (Settings) p.getExtensions().getByName(SETTINGS_EXTN);
 	}
 
 	/**
