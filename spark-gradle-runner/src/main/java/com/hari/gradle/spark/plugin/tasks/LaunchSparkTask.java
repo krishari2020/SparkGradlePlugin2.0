@@ -12,7 +12,6 @@ import static com.hari.gradle.spark.plugin.Constants.STD_ERR;
 import static com.hari.gradle.spark.plugin.Constants.STD_OUT;
 import static com.hari.gradle.spark.plugin.Constants.YARN_CONF_DIR;
 import static com.hari.gradle.spark.plugin.SPGLogger.PROPERTY_SET_VALUE;
-import static com.hari.gradle.spark.plugin.Settings.SETTINGS_EXTN;
 import static com.hari.gradle.spark.plugin.SparkRunMode.getRunMode;
 import static com.hari.gradle.spark.plugin.Utils.getFS;
 import static java.util.Arrays.asList;
@@ -38,7 +37,7 @@ import com.hari.gradle.spark.plugin.SparkRunMode;
  * "CopyDepsTask" task to download all dependencies needed for driver and
  * executor classpath. SparkLauncher is then invoked by launching a separate
  * java process and the main class that would be invoked is
- * {@link com.hari.learning.gradle.spark.plugin.tasks.LaunchMainSpark } }.
+ * {@link com.hari.gradle.spark.plugin.tasks.LaunchMainSpark } }.
  * 
  * Supported modes are 1) local 2) yarn - cluster (Support for yarn-client is
  * still a subject of discussion)
@@ -59,7 +58,7 @@ public class LaunchSparkTask extends DefaultTask {
 	@TaskAction
 	public void launch() throws IOException {
 		final Project p = getProject();
-		final Settings settings = (Settings) p.getExtensions().getByName(SETTINGS_EXTN);
+		final Settings settings = Settings.getSettings(p);
 		final String mainClass = settings.getMainClass();
 		// mainClass cannot be empty.
 		if (mainClass == null || mainClass.isEmpty())

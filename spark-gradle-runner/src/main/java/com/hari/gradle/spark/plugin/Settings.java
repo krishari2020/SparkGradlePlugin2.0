@@ -35,6 +35,7 @@ public class Settings {
     private String outRedirect;
     private String errRedirect;
     private String scalaVersion = "2.11"; // Default it to spark-scala 2.11 version.
+    private String sparkConfig = "EMPTY";
     // maintain a distributed cache of spark jar dependencies.
     // fall back to defaults.
     private String jarZipDestPath = "/tmp/spark_gradle_plugin/deps"; // default path where Yarn will
@@ -152,6 +153,14 @@ public class Settings {
 
     public void setHadoopUserName(String hadoopUserName) {
         this.hadoopUserName = hadoopUserName;
+    }
+
+    public String getSparkConfig() {
+        return sparkConfig;
+    }
+
+    public void setSparkConfig(String sparkConfig) {
+        this.sparkConfig = sparkConfig;
     }
 
     public Properties getDockerProperties() {
